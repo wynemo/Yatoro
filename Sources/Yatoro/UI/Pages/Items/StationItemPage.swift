@@ -101,7 +101,7 @@ public class StationItemPage: DestroyablePage {
         self.stationLeftPlane = stationLeftPlane
         self.stationLeftPlane.moveAbove(other: self.pageNamePlane)
 
-        let stationRightWidth = min(UInt32(item.name.count), state.width - 12)
+        let stationRightWidth = min(item.name.terminalColumnWidth, state.width - 12)
         guard
             let stationRightPlane = Plane(
                 in: pagePlane,
@@ -136,7 +136,7 @@ public class StationItemPage: DestroyablePage {
         self.notesLeftPlane = notesLeftPlane
         self.notesLeftPlane.moveAbove(other: self.stationRightPlane)
 
-        var notesRightWidth = min(UInt32(item.editorialNotes?.standard?.count ?? 1), state.width - 10)
+        var notesRightWidth = min((item.editorialNotes?.standard ?? " ").terminalColumnWidth, state.width - 10)
         if notesRightWidth == 0 { notesRightWidth = 1 }
         guard
             let notesRightPlane = Plane(
@@ -172,7 +172,7 @@ public class StationItemPage: DestroyablePage {
         self.isLiveLeftPlane = isLiveLeftPlane
         self.isLiveLeftPlane.moveAbove(other: self.notesRightPlane)
 
-        let isLiveRightWidth = min(UInt32("\(item.isLive)".count), state.width - 11)
+        let isLiveRightWidth = min("\(item.isLive)".terminalColumnWidth, state.width - 11)
         guard
             let isLiveRightPlane = Plane(
                 in: pagePlane,

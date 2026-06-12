@@ -392,7 +392,7 @@ public class CommandPage: Page {
         }
         completionsPlane.moveOnTopOfZStack()
         completionSelectedPlane.moveOnTopOfZStack()
-        let completionsLengths = inputQueue.completionCommands.map({ UInt32($0.count) })
+        let completionsLengths = inputQueue.completionCommands.map(\.terminalColumnWidth)
         let maxCompletionLength = (completionsLengths.max() ?? 1) + 5
         let yPos = state.absY - Int32(completionsDisplayedAmount) + 1
 
@@ -499,7 +499,7 @@ public class CommandPage: Page {
                 .init(
                     absX: x,
                     absY: 0,
-                    width: UInt32(nowPlaying.title.count),
+                    width: nowPlaying.title.terminalColumnWidth,
                     height: 1
                 )
             )
@@ -511,7 +511,7 @@ public class CommandPage: Page {
                 .init(
                     absX: x,
                     absY: 0,
-                    width: UInt32(nowPlaying.artistName.count),
+                    width: nowPlaying.artistName.terminalColumnWidth,
                     height: 1
                 )
             )
@@ -530,7 +530,7 @@ public class CommandPage: Page {
                 .init(
                     absX: nowPlayingDashPlane.x + 2,
                     absY: 0,
-                    width: UInt32(nowPlaying.title.count),
+                    width: nowPlaying.title.terminalColumnWidth,
                     height: 1
                 )
             )

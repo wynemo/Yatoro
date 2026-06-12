@@ -242,7 +242,7 @@ public class SearchPage: DestroyablePage {
                     pageNamePlane.putString("Catalog stations:", at: (0, 0))
                 }
                 let searchPhrasePlaneWidth = min(
-                    UInt32(searchPhrase.count),
+                    searchPhrase.terminalColumnWidth,
                     self.state.width - pageNamePlane.width - 4
                 )
                 searchPhrasePlane.updateByPageState(
@@ -282,7 +282,7 @@ public class SearchPage: DestroyablePage {
                     .init(
                         absX: Int32(pageNamePlane.width) + 3,
                         absY: 0,
-                        width: UInt32(searchPhrase.count),
+                        width: searchPhrase.terminalColumnWidth,
                         height: 1
                     )
                 )
@@ -328,7 +328,7 @@ public class SearchPage: DestroyablePage {
 
                 // Open Playlist in-place
                 let name = playlistDescription.playlist.name
-                pageNamePlane.width = UInt32(name.count)
+                pageNamePlane.width = name.terminalColumnWidth
                 pageNamePlane.putString(name, at: (0, 0))
                 searchPhrasePlane.updateByPageState(.init(absX: 2, absY: 0, width: 1, height: 1))
                 searchPhrasePlane.erase()

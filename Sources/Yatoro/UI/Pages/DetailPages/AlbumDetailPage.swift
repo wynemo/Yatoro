@@ -87,7 +87,7 @@ public class AlbumDetailPage: DestroyablePage {
                 state: .init(
                     absX: 4,
                     absY: 2,
-                    width: UInt32(title.count),
+                    width: title.terminalColumnWidth,
                     height: 1
                 ),
                 debugID: "ADTP"

@@ -104,7 +104,7 @@ public class SongItemPage: DestroyablePage {
         self.artistLeftPlane = artistLeftPlane
         self.artistLeftPlane.moveAbove(other: self.pageNamePlane)
 
-        let artistRightWidth = min(UInt32(item.artistName.count), state.width - 11)
+        let artistRightWidth = min(item.artistName.terminalColumnWidth, state.width - 11)
         guard
             let artistRightPlane = Plane(
                 in: pagePlane,
@@ -139,7 +139,7 @@ public class SongItemPage: DestroyablePage {
         self.songLeftPlane = songLeftPlane
         self.songLeftPlane.moveAbove(other: self.artistRightPlane)
 
-        let songRightWidth = min(UInt32(item.title.count), state.width - 9)
+        let songRightWidth = min(item.title.terminalColumnWidth, state.width - 9)
         guard
             let songRightPlane = Plane(
                 in: pagePlane,
@@ -174,7 +174,7 @@ public class SongItemPage: DestroyablePage {
         self.albumLeftPlane = albumLeftPlane
         self.albumLeftPlane.moveAbove(other: self.songRightPlane)
 
-        let albumRightWidth = min(UInt32(item.albumTitle?.count ?? 1), state.width - 10)
+        let albumRightWidth = min((item.albumTitle ?? " ").terminalColumnWidth, state.width - 10)
         guard
             let albumRightPlane = Plane(
                 in: pagePlane,

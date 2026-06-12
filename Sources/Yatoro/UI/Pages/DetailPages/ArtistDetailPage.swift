@@ -86,7 +86,7 @@ public class ArtistDetailPage: DestroyablePage {
                 state: .init(
                     absX: 4,
                     absY: 2,
-                    width: UInt32(artistName.count),
+                    width: artistName.terminalColumnWidth,
                     height: 1
                 ),
                 debugID: "ARDPTP"

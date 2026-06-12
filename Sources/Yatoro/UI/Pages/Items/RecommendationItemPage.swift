@@ -93,7 +93,7 @@ public class RecommendationItemPage: DestroyablePage {
         self.titleLeftPlane.moveAbove(other: self.pageNamePlane)
 
         if let title = item.title {
-            let titleRightWidth = min(UInt32(title.count), state.width - 10)
+            let titleRightWidth = min(title.terminalColumnWidth, state.width - 10)
             guard
                 let titleRightPlane = Plane(
                     in: pagePlane,
@@ -138,7 +138,7 @@ public class RecommendationItemPage: DestroyablePage {
         if typesStr.count >= 2 {
             typesStr.removeLast(2)
         }
-        let typesRightWidth = min(UInt32(typesStr.count), state.width - 10)
+        let typesRightWidth = min(typesStr.terminalColumnWidth, state.width - 10)
         guard
             let typesRightPlane = Plane(
                 in: pagePlane,
@@ -174,7 +174,7 @@ public class RecommendationItemPage: DestroyablePage {
         self.refreshDateLeftPlane.moveAbove(other: self.typesRightPlane)
 
         if let refreshDate = item.nextRefreshDate?.formatted() {
-            let refreshDateRightWidth = min(UInt32(refreshDate.count), state.width - 12)
+            let refreshDateRightWidth = min(refreshDate.terminalColumnWidth, state.width - 12)
             guard
                 let refreshDateRightPlane = Plane(
                     in: pagePlane,

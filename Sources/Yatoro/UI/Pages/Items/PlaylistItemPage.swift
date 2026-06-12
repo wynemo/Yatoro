@@ -101,7 +101,7 @@ public class PlaylistItemPage: DestroyablePage {
         self.playlistLeftPlane = playlistLeftPlane
         self.playlistLeftPlane.moveAbove(other: self.pageNamePlane)
 
-        let playlistRightWidth = min(UInt32(item.name.count), state.width - 13)
+        let playlistRightWidth = min(item.name.terminalColumnWidth, state.width - 13)
         guard
             let playlistRightPlane = Plane(
                 in: pagePlane,
@@ -136,7 +136,7 @@ public class PlaylistItemPage: DestroyablePage {
         self.descriptionLeftPlane = descriptionLeftPlane
         self.descriptionLeftPlane.moveAbove(other: self.playlistRightPlane)
 
-        var descriptionRightWidth = min(UInt32(item.standardDescription?.count ?? 1), state.width - 16)
+        var descriptionRightWidth = min((item.standardDescription ?? " ").terminalColumnWidth, state.width - 16)
         if descriptionRightWidth == 0 { descriptionRightWidth = 1 }
         guard
             let descriptionRightPlane = Plane(
@@ -172,7 +172,7 @@ public class PlaylistItemPage: DestroyablePage {
         self.curatorLeftPlane = curatorLeftPlane
         self.curatorLeftPlane.moveAbove(other: self.descriptionRightPlane)
 
-        let curatorRightWidth = min(UInt32(item.curatorName?.count ?? 1), state.width - 12)
+        let curatorRightWidth = min((item.curatorName ?? " ").terminalColumnWidth, state.width - 12)
         guard
             let curatorRightPlane = Plane(
                 in: pagePlane,

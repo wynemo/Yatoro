@@ -71,7 +71,7 @@ public class RecommendationDetailPage: DestroyablePage {
                     state: .init(
                         absX: 4,
                         absY: 0,
-                        width: UInt32(title.count),
+                        width: title.terminalColumnWidth,
                         height: 1
                     ),
                     debugID: "RDTP"

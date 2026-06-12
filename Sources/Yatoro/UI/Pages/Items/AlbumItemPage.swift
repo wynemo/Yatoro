@@ -103,7 +103,7 @@ public class AlbumItemPage: DestroyablePage {
         self.artistLeftPlane = artistLeftPlane
         self.artistLeftPlane.moveAbove(other: self.pageNamePlane)
 
-        let artistRightWidth = min(UInt32(item.artistName.count), state.width - 11)
+        let artistRightWidth = min(item.artistName.terminalColumnWidth, state.width - 11)
         guard
             let artistRightPlane = Plane(
                 in: pagePlane,
@@ -148,7 +148,7 @@ public class AlbumItemPage: DestroyablePage {
         if genreStr.count >= 2 {
             genreStr.removeLast(2)
         }
-        let genreRightWidth = min(UInt32(genreStr.count), state.width - 10)
+        let genreRightWidth = min(genreStr.terminalColumnWidth, state.width - 10)
         guard
             let genreRightPlane = Plane(
                 in: pagePlane,
@@ -183,7 +183,7 @@ public class AlbumItemPage: DestroyablePage {
         self.albumLeftPlane = albumLeftPlane
         self.albumLeftPlane.moveAbove(other: self.genreRightPlane)
 
-        let albumRightWidth = min(UInt32(item.title.count), state.width - 10)
+        let albumRightWidth = min(item.title.terminalColumnWidth, state.width - 10)
         guard
             let albumRightPlane = Plane(
                 in: pagePlane,

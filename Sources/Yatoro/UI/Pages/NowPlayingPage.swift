@@ -491,15 +491,15 @@ public class NowPlayingPage: DestroyablePage {
             self.durationPlane.updateByPageState(.init(absX: 2, absY: 4, width: 1, height: 1))
             return
         }
-        var width = min(UInt32(currentSong.artistName.count), self.state.width - 11)
+        var width = min(currentSong.artistName.terminalColumnWidth, self.state.width - 11)
         self.artistRightPlane.erase()
         self.artistRightPlane.updateByPageState(.init(absX: 10, absY: 2, width: width, height: 1))
         self.artistRightPlane.putString(currentSong.artistName, at: (0, 0))
-        width = min(UInt32(currentSong.title.count), self.state.width - 11)
+        width = min(currentSong.title.terminalColumnWidth, self.state.width - 11)
         self.songRightPlane.erase()
         self.songRightPlane.updateByPageState(.init(absX: 10, absY: 3, width: width, height: 1))
         self.songRightPlane.putString(currentSong.title, at: (0, 0))
-        width = min(UInt32(currentSong.albumTitle?.count ?? 3), self.state.width - 11)
+        width = min((currentSong.albumTitle ?? "nil").terminalColumnWidth, self.state.width - 11)
         self.albumRightPlane.erase()
         self.albumRightPlane.updateByPageState(.init(absX: 10, absY: 4, width: width, height: 1))
         self.albumRightPlane.putString(currentSong.albumTitle ?? "nil", at: (0, 0))
