@@ -47,6 +47,7 @@ public class UI {
             fatalError("Failed to initialize notcurses UI.")
         }
         UI.notcurses = notcurses
+        Self.resetGhosttyKeyboardProtocol()
         logger?.debug("Notcurses initialized.")
 
         guard let stdPlane = Plane(in: notcurses) else {
@@ -128,8 +129,205 @@ public class UI {
         guard input.eventType != .release else {
             return
         }
+        // Drain all available input in one pass so that escape sequences
+        // (e.g. Ghostty bracketed-paste \e[200~...\e[201~ or IME sequences)
+        // are normalized before InputQueue processes the leading ESC.
+        var inputs = [input]
         logger?.trace("New input: \(input)")
-        inputQueue.add(input)
+        while let extra = Input(notcurses: notcurses) {
+            guard extra.eventType != .release else { continue }
+            logger?.trace("New input: \(extra)")
+            inputs.append(extra)
+        }
+        for input in normalizeInputs(inputs) {
+            inputQueue.add(input)
+        }
+    }
+
+    private func normalizeInputs(_ inputs: [Input]) -> [Input] {
+        var normalized: [Input] = []
+        var index = inputs.startIndex
+
+        while index < inputs.endIndex {
+            if let result = decodeBareCSIUInput(in: inputs, startingAt: index) {
+                normalized.append(result.input)
+                index = result.nextIndex
+                continue
+            }
+
+            if let result = decodeCSIUInput(in: inputs, startingAt: index) {
+                normalized.append(result.input)
+                index = result.nextIndex
+                continue
+            }
+
+            normalized.append(inputs[index])
+            index = inputs.index(after: index)
+        }
+
+        return normalized
+    }
+
+    private func decodeBareCSIUInput(
+        in inputs: [Input],
+        startingAt startIndex: Array<Input>.Index
+    ) -> (input: Input, nextIndex: Array<Input>.Index)? {
+        let input = inputs[startIndex]
+
+        if input.id > 0x7F, input.utf8 == "u",
+            let decoded = inputForBareUnicodeScalar(input.id)
+        {
+            return (decoded, inputs.index(after: startIndex))
+        }
+
+        if input.modifiers.isEmpty, input.utf8.hasSuffix("u") {
+            let codepoint = String(input.utf8.dropLast())
+            if let decoded = inputForBareUnicodeScalar(codepoint) {
+                return (decoded, inputs.index(after: startIndex))
+            }
+        }
+
+        var index = startIndex
+        var codepoint = ""
+
+        while index < inputs.endIndex {
+            guard let token = token(for: inputs[index]) else {
+                return nil
+            }
+
+            if token == "u" {
+                guard let decoded = inputForBareUnicodeScalar(codepoint) else {
+                    return nil
+                }
+                return (decoded, inputs.index(after: index))
+            }
+
+            guard token.count == 1, token.allSatisfy(\.isNumber) else {
+                return nil
+            }
+            codepoint.append(token)
+            index = inputs.index(after: index)
+        }
+
+        return nil
+    }
+
+    private func decodeCSIUInput(
+        in inputs: [Input],
+        startingAt startIndex: Array<Input>.Index
+    ) -> (input: Input, nextIndex: Array<Input>.Index)? {
+        guard token(for: inputs[startIndex]) == "\u{1B}" else {
+            return nil
+        }
+
+        var index = inputs.index(after: startIndex)
+        guard index < inputs.endIndex, token(for: inputs[index]) == "[" else {
+            return nil
+        }
+
+        index = inputs.index(after: index)
+        var codepoint = ""
+
+        while index < inputs.endIndex {
+            guard let token = token(for: inputs[index]) else {
+                return nil
+            }
+
+            if token == "u" {
+                guard let decoded = inputForUnicodeScalar(codepoint) else {
+                    return nil
+                }
+                return (decoded, inputs.index(after: index))
+            }
+
+            if token == ";" {
+                guard !codepoint.isEmpty else {
+                    return nil
+                }
+                return decodeCSIUInputWithModifiers(
+                    codepoint: codepoint,
+                    in: inputs,
+                    startingAt: inputs.index(after: index)
+                )
+            }
+
+            guard token.count == 1, token.allSatisfy(\.isNumber) else {
+                return nil
+            }
+            codepoint.append(token)
+            index = inputs.index(after: index)
+        }
+
+        return nil
+    }
+
+    private func decodeCSIUInputWithModifiers(
+        codepoint: String,
+        in inputs: [Input],
+        startingAt startIndex: Array<Input>.Index
+    ) -> (input: Input, nextIndex: Array<Input>.Index)? {
+        var index = startIndex
+
+        while index < inputs.endIndex {
+            guard let token = token(for: inputs[index]) else {
+                return nil
+            }
+
+            if token == "u" {
+                guard let decoded = inputForUnicodeScalar(codepoint) else {
+                    return nil
+                }
+                return (decoded, inputs.index(after: index))
+            }
+
+            guard token.count == 1, token.allSatisfy(\.isNumber) else {
+                return nil
+            }
+            index = inputs.index(after: index)
+        }
+
+        return nil
+    }
+
+    private func inputForBareUnicodeScalar(_ codepoint: String) -> Input? {
+        guard let scalarValue = UInt32(codepoint) else {
+            return nil
+        }
+        return inputForBareUnicodeScalar(scalarValue)
+    }
+
+    private func inputForBareUnicodeScalar(_ scalarValue: UInt32) -> Input? {
+        guard scalarValue >= 0x1000 else {
+            return nil
+        }
+        return inputForUnicodeScalar(scalarValue)
+    }
+
+    private func inputForUnicodeScalar(_ codepoint: String) -> Input? {
+        guard let scalarValue = UInt32(codepoint) else {
+            return nil
+        }
+        return inputForUnicodeScalar(scalarValue)
+    }
+
+    private func inputForUnicodeScalar(_ scalarValue: UInt32) -> Input? {
+        guard
+            scalarValue > 0x7F,
+            let scalar = UnicodeScalar(scalarValue)
+        else {
+            return nil
+        }
+        return Input(utf8: String(Character(scalar)))
+    }
+
+    private func token(for input: Input) -> String? {
+        if input.id == 27 || input.utf8 == "\u{1B}" {
+            return "\u{1B}"
+        }
+        guard input.modifiers.isEmpty, input.utf8.count == 1 else {
+            return nil
+        }
+        return input.utf8
     }
 
     public func stop() async {
@@ -148,11 +346,23 @@ public class UI {
                 FileHandle.standardOutput.write(sequence.data(using: .utf8)!)
             }
         }
+        Self.resetGhosttyKeyboardProtocol()
 
         UI.notcurses?.stop()
         logger?.debug("Notcurses stopped.")
         logger?.info("Yatoro stopped.\n")
         exit(EXIT_SUCCESS)
+    }
+
+    private static func resetGhosttyKeyboardProtocol() {
+        guard
+            ProcessInfo.processInfo.environment["TERM_PROGRAM"]?.lowercased() == "ghostty"
+        else {
+            return
+        }
+
+        let sequence = "\u{1B}[<u"
+        FileHandle.standardOutput.write(sequence.data(using: .utf8)!)
     }
 
 }

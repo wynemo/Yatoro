@@ -57,8 +57,10 @@ public actor CommandInput {
         guard !newInput.utf8.isEmpty else {
             return
         }
-        inputs.insert(Character(newInput.utf8), at: cursorPositionInWord)
-        cursorPositionInWord += 1
+        for char in newInput.utf8 {
+            inputs.insert(char, at: cursorPositionInWord)
+            cursorPositionInWord += 1
+        }
     }
 
     public func getCursorPosition() async -> Int {
