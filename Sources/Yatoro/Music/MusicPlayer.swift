@@ -11,6 +11,8 @@ public typealias CatalogTopResult = MusicCatalogSearchResponse.TopResult
 extension CatalogTopResult: @retroactive MusicCatalogSearchable {}
 extension LibraryTopResult: @retroactive MusicLibrarySearchable {}
 
+@MainActor private var restoredQueueSongs: [Song]?
+
 public final class AudioPlayerManager: Sendable {
 
     @MainActor static let shared = AudioPlayerManager()
@@ -35,6 +37,18 @@ public final class AudioPlayerManager: Sendable {
         )
         return entries
 
+    }
+
+    @MainActor public var queueSongs: [Song] {
+        if let restoredQueueSongs {
+            return restoredQueueSongs
+        }
+        return queue.compactMap { entry -> Song? in
+            switch entry.item {
+            case .song(let song): return song
+            default: return nil
+            }
+        }
     }
 
     var nowPlaying: Song? {
@@ -185,12 +199,14 @@ public extension AudioPlayerManager {
         }
     }
 
-    func clearQueue() async {
+    @MainActor func clearQueue() async {
         player.stop()
         player.queue.entries = []
+        restoredQueueSongs = nil
+        await QueuePersistence.save(songs: [])
     }
 
-    func addItemsToQueue<T>(
+    @MainActor func addItemsToQueue<T>(
         items: MusicItemCollection<T>,
         at position: ApplicationMusicPlayer.Queue.EntryInsertionPosition
     ) async
@@ -202,19 +218,56 @@ public extension AudioPlayerManager {
                 try await player.queue.insert(items, position: position)
             }
         } catch {
-            await logger?.error(
+            logger?.error(
                 "Unable to add songs to player queue: \(error.localizedDescription)"
             )
             return
         }
         do {
             if !player.isPreparedToPlay {
-                await logger?.trace("Preparing player...")
+                logger?.trace("Preparing player...")
                 try await player.prepareToPlay()
             }
         } catch {
-            await logger?.critical("Unable to prepare player: \(error.localizedDescription)")
+            logger?.critical("Unable to prepare player: \(error.localizedDescription)")
         }
+        restoredQueueSongs = nil
+        await saveQueue()
+    }
+
+    @MainActor func restoreQueue() async {
+        guard player.queue.entries.isEmpty else {
+            return
+        }
+        guard let songs = await QueuePersistence.load() else {
+            return
+        }
+
+        let restoredSongs = Array(songs)
+        guard let firstSong = restoredSongs.first else {
+            return
+        }
+        restoredQueueSongs = restoredSongs
+
+        player.queue = .init(for: MusicItemCollection<Song>([firstSong]))
+        do {
+            logger?.trace("Preparing player with restored queue...")
+            try await player.prepareToPlay()
+            let remainingSongs = Array(restoredSongs.dropFirst())
+            if !remainingSongs.isEmpty {
+                try await player.queue.insert(
+                    MusicItemCollection<Song>(remainingSongs),
+                    position: .tail
+                )
+            }
+            logger?.debug("Restored queue from \(QueuePersistence.queueURL.path).")
+        } catch {
+            logger?.critical("Unable to prepare restored queue: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor private func saveQueue() async {
+        await QueuePersistence.save(songs: queueSongs)
     }
 
     func setTime(

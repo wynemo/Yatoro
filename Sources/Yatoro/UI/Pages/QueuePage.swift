@@ -14,7 +14,7 @@ public class QueuePage: Page {
 
     private var state: PageState
 
-    private var currentQueue: ApplicationMusicPlayer.Queue.Entries?
+    private var currentQueue: [Song]?
     private var cache: [Page]
 
     private var maxItemsDisplayed: Int {
@@ -193,7 +193,7 @@ public class QueuePage: Page {
             logger?.error("QueuePage: Unhandled shuffle mode.")
         }
 
-        guard currentQueue != Player.shared.queue else {
+        guard currentQueue != Player.shared.queueSongs else {
             return
         }
         logger?.debug("Queue UI update")
@@ -201,30 +201,27 @@ public class QueuePage: Page {
             await item.destroy()
         }
         cache = []
-        currentQueue = Player.shared.queue
+        currentQueue = Player.shared.queueSongs
         var i = 0
         for itemIndex in currentQueue!.indices {
-            switch currentQueue![itemIndex].item {
-            case .song(let song):
-                guard
-                    let page = SongItemPage(
-                        in: self.borderPlane,
-                        state: .init(
-                            absX: 1,
-                            absY: 1 + Int32(i) * 5,
-                            width: state.width - 2,
-                            height: 5
-                        ),
-                        type: .queuePage,
-                        item: song
-                    )
-                else {
-                    continue
-                }
-                i += 1
-                self.cache.append(page)
-            default: break
+            let song = currentQueue![itemIndex]
+            guard
+                let page = SongItemPage(
+                    in: self.borderPlane,
+                    state: .init(
+                        absX: 1,
+                        absY: 1 + Int32(i) * 5,
+                        width: state.width - 2,
+                        height: 5
+                    ),
+                    type: .queuePage,
+                    item: song
+                )
+            else {
+                continue
             }
+            i += 1
+            self.cache.append(page)
             if itemIndex >= maxItemsDisplayed {
                 break
             }

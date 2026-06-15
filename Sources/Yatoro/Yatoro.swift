@@ -168,6 +168,7 @@ struct Yatoro: AsyncParsableCommand {
 
         let player = Player.shared
         await player.authorize()
+        await player.restoreQueue()
 
         let ui = await UI()
         await ui.start()
